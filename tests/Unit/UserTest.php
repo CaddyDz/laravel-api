@@ -20,7 +20,7 @@ class UserTest extends TestCase
         $this->assertTrue(is_subclass_of(User::class, 'Illuminate\Foundation\Auth\User'));
     }
 
-    public function inpsectHasMany($model, $relationship)
+    public function inpsectHasMany($model, $relationship, $collection)
     {
         $model::unguard(); // Disable mass assignment protection
         $relationship->createMany(create($model, [], 'make', 2)->toArray());
