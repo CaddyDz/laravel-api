@@ -51,13 +51,13 @@ class LoginController extends Controller
         if ($validation->fails()) {
             return response(['error' => $validation->errors()], 401);
         }
-        
+
         // If the class is using the ThrottlesLogins trait, we can automatically throttle
         // the login attempts for this application. We'll key this by the username and
         // the IP address of the client making these requests into this application.
         if ($this->hasTooManyLoginAttempts($request)) {
             $this->fireLockoutEvent($request);
-            
+
             return $this->sendLockoutResponse($request);
         }
         if ($this->attemptLogin($request)) {
@@ -88,7 +88,7 @@ class LoginController extends Controller
         ]);
     }
 
-     /**
+    /**
      * Attempt to log the user into the application.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -149,5 +149,17 @@ class LoginController extends Controller
     {
         $this->clearLoginAttempts($request);
         return $this->authenticated($request, $this->guard()->user());
+    }
+
+    /**
+     * Log the user out of the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->token()->revoke();
+        return $this->loggedOut($request);
     }
 }

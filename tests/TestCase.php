@@ -105,13 +105,13 @@ abstract class TestCase extends BaseTestCase
     protected function getIndexOfAloggedMessage($title, array $log)
     {
         // Remove the last line CRLF
-        for ($i = count($log) -1; $i >= 0; $i--) { // Start at the end of the array 12
+        for ($i = count($log) - 1; $i >= 0; $i--) { // Start at the end of the array 12
             // reduce line each time and stop when reach 0
             if (strpos($log[$i], $title) !== false) { // Strict checking for line index 0 is false
                 return $i;
             }
         }
-        $this->fail('No information found in the log file '.$this->getLogFileFullPath());
+        $this->fail('No information found in the log file ' . $this->getLogFileFullPath());
     }
 
     /**
@@ -139,5 +139,22 @@ abstract class TestCase extends BaseTestCase
         $date = now()->format('Y-m-d');
         $logfileFullpath = storage_path("logs/laravel-{$date}.log");
         return $logfileFullpath;
+    }
+
+    protected function resetAuth(array $guards = null)
+    {
+        $guards = $guards ?: array_keys(config('auth.guards'));
+
+        foreach ($guards as $guard) {
+            $guard = $this->app['auth']->guard($guard);
+
+            if ($guard instanceof \Illuminate\Auth\SessionGuard) {
+                $guard->logout();
+            }
+        }
+
+        $protectedProperty = new \ReflectionProperty($this->app['auth'], 'guards');
+        $protectedProperty->setAccessible(true);
+        $protectedProperty->setValue($this->app['auth'], []);
     }
 }

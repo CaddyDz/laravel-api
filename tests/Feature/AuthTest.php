@@ -116,7 +116,7 @@ class AuthTest extends TestCase
         $log = $this->getLogInfo();
         $this->get($this->getVerificationUrl($user['email'], $log), [
             'Authorization' => 'Bearer ' . $token
-            ]);
+        ]);
         Event::fake(); // No log if defined earlier
         $response = $this->get($this->getVerificationUrl($user['email'], $log), [
             'Authorization' => 'Bearer ' . $token
@@ -169,6 +169,26 @@ class AuthTest extends TestCase
         $this->assertNotEmpty($data->refresh_token);
     }
 
+    public function test_logout()
+    {
+        $data = $this->getLoginResponse()->getData()->success;
+        $response = $this->json('POST', '/api/logout', [], [
+            'Authorization' => $data->token_type . ' ' . $data->access_token
+        ]);
+        $response->assertOk();
+
+        // Directly assert the api user's token was revoked.
+        $this->assertTrue($this->app['auth']->guard('api')->user()->token()->revoked);
+
+        $this->resetAuth();
+
+        // Assert using the revoked token for the next request won't work.
+        $response = $this->json('GET', '/api/user', [], [
+            'Authorization' => $data->token_type . ' ' . $data->access_token
+        ]);
+        $response->assertUnauthorized();
+    }
+
     /**
      * Assert guests can't login to their account with no password
      *
@@ -196,7 +216,7 @@ class AuthTest extends TestCase
         config(['passport.client_secret' => $client_secret]);
         $user = create(User::class);
         $credentials = ['email' => $user->email, 'password' => 'wrong_password'];
-        for ($i=0; $i < 6; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             $this->post('/api/login', $credentials);
         }
         Event::assertDispatched(Lockout::class);
@@ -216,7 +236,7 @@ class AuthTest extends TestCase
         $this->assertContains("To: $email", $log[$indexOfLoggedEmail], "No emails were found.\n");
         $this->assertContains(
             // 1 => user ID
-            config('app.url').'/api/email/verify/1?expires=' . (string) (time() + 3600) . '&signature=',
+            config('app.url') . '/api/email/verify/1?expires=' . (string) (time() + 3600) . '&signature=',
             $log[$indexOfLoggedEmail + 5], // Jump by 5 lines to find link
             "No links were found.\n"
         );
