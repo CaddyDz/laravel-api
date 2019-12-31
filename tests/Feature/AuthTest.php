@@ -87,7 +87,7 @@ class AuthTest extends TestCase
         $secondToken = $secondToken->getData()->success->token;
         $log = $this->getLogInfo();
         $this->assertVerificationEmailIsLogged($log, $user['email']);
-        // $this->assertVerificationEmailIsLogged($log, $secondUser['email']);
+        $this->assertVerificationEmailIsLogged($log, $secondUser['email'], 2);
         Event::fake(); // No log if defined earlier
         $response = $this->get($this->getVerificationUrl($user['email'], $log), [
             'Authorization' => 'Bearer ' . $secondToken
@@ -230,13 +230,14 @@ class AuthTest extends TestCase
      * @param array $log log content
      * @param string $email The receiving registered user email
      **/
-    public function assertVerificationEmailIsLogged($log, $email)
+    public function assertVerificationEmailIsLogged($log, $email, $id = 1)
     {
         $indexOfLoggedEmail = $this->getIndexOfAloggedMessage($email, $log);
         $this->assertContains("To: $email", $log[$indexOfLoggedEmail], "No emails were found.\n");
         $this->assertContains(
             // 1 => user ID
-            config('app.url') . '/api/email/verify/1?expires=' . (string) (time() + 3600) . '&signature=',
+            // Remove last two characters (seconds) to avoid CI failing due to assertion latency
+            substr(config('app.url') . "/api/email/verify/$id?expires=" . (string) (time() + 3600), 0, -2),
             $log[$indexOfLoggedEmail + 5], // Jump by 5 lines to find link
             "No links were found.\n"
         );
